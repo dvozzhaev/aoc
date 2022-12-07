@@ -152,8 +152,8 @@ namespace day4 {
         for (auto& line : lines) {
             auto [left, right] = split(line);
             if (left.right - left.left > right.right - right.left) std::swap(left, right);
-            if (left.left >= right.left && left.left <= right.right
-                || left.right >= right.left && left.right <= right.right) c++;
+            if ((left.left >= right.left && left.left <= right.right)
+                || (left.right >= right.left && left.right <= right.right)) c++;
         }
         return c;
     }
@@ -239,6 +239,24 @@ std::string day5_2(std::vector<std::string> lines) {
         r += v.back();
     }
     return r;
+}
+
+int day6(std::vector<std::string> input, int N) {
+    for (const auto& line : input) {
+        for (int k = 0; k < line.size() - N; ++k) {
+            int n = 0;
+            for (int i = 0; i < N - 1; ++i) {
+                for (int j = i + 1; j < N; ++j) {
+                    if (line[k + i] == line[k + j])
+                        ++n;
+                }
+            }
+            if (n == 0) {
+                return k + N;
+            }
+        }
+    }
+    return 0;
 }
 
 struct day7 {
@@ -357,6 +375,8 @@ int main()
     // std::cout << day4::second(read_input("day4.txt")) << std::endl;
     // std::cout << day5_1(read_input("day5.txt")) << std::endl;
     // std::cout << day5_2(read_input("day5.txt")) << std::endl;
+    // std::cout << "day 6.1: " << day6(read_input("day6.txt"), 4) << "\n";
+    // std::cout << "day 6.2: " << day6(read_input("day6.txt"), 14) << "\n";
     std::cout << day7().first(read_input("day7.txt")) << std::endl;
     std::cout << day7().second(read_input("day7.txt")) << std::endl;
     return 0;
