@@ -362,6 +362,62 @@ struct day7 {
     }
 };
 
+int day8_1(std::vector<std::string> lines) {
+    int r = 0;
+    std::vector<std::vector<int>> d = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+    int w = static_cast<int>(lines.size());
+    int h = static_cast<int>(lines[0].size());
+    for (int x = 0; x < w; ++x) {
+        for (int y = 0; y < h; ++y) {
+            for (int i = 0; i < d.size(); ++i) {
+                bool visible = true;
+                int x1 = x, y1 = y;
+                int t = lines[x][y];
+                while (true) {
+                    x1 += d[i][0];
+                    y1 += d[i][1];
+                    if (x1 < 0 || x1 >= w || y1 < 0 || y1 >= h) break;
+                    if (lines[x1][y1] >= t) {
+                        visible = false;
+                        break;
+                    }
+                }
+                if (visible) {
+                    r += 1;
+                    break;
+                }
+            }
+        }
+    }
+    return r;
+}
+
+int day8_2(std::vector<std::string> lines) {
+    int r = 0;
+    std::vector<std::vector<int>> d = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+    int w = static_cast<int>(lines.size());
+    int h = static_cast<int>(lines[0].size());
+    for (int x = 0; x < w; ++x) {
+        for (int y = 0; y < h; ++y) {
+            int score = 1;
+            for (int i = 0; i < d.size(); ++i) {
+                int x1 = x, y1 = y;
+                int t = lines[x][y];
+                int view = 0;
+                while (true) {
+                    x1 += d[i][0];
+                    y1 += d[i][1];
+                    if (x1 < 0 || x1 >= w || y1 < 0 || y1 >= h) break;
+                    view += 1;
+                    if (lines[x1][y1] >= t) break;
+                }
+                score *= view;
+            }
+            r = std::max(r, score);
+        }
+    }
+    return r;
+}
 
 int main()
 {
@@ -377,7 +433,10 @@ int main()
     // std::cout << day5_2(read_input("day5.txt")) << std::endl;
     // std::cout << "day 6.1: " << day6(read_input("day6.txt"), 4) << "\n";
     // std::cout << "day 6.2: " << day6(read_input("day6.txt"), 14) << "\n";
-    std::cout << day7().first(read_input("day7.txt")) << std::endl;
-    std::cout << day7().second(read_input("day7.txt")) << std::endl;
+    // std::cout << day7().first(read_input("day7.txt")) << std::endl;
+    // std::cout << day7().second(read_input("day7.txt")) << std::endl;
+    std::cout << day8_1(read_input("day8.txt")) << std::endl;
+    std::cout << day8_2(read_input("day8.txt")) << std::endl;
+
     return 0;
 }
