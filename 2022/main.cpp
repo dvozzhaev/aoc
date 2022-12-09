@@ -419,6 +419,114 @@ int day8_2(std::vector<std::string> lines) {
     return r;
 }
 
+namespace day9 {
+    int sign(int a) {
+        return a < 0 ? -1 : a > 0 ? 1 : 0;
+    }
+
+    int day9_1(std::vector<std::string> lines) {
+        std::set<std::pair<int, int>> t;
+        int xh = 0, xt = 0, yh = 0, yt = 0;
+        std::vector<std::vector<int>> d = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+
+        for (const auto& line : lines) {
+            int di;
+            switch (line[0]) {
+            case 'U': di = 2; break;
+            case 'D': di = 3; break;
+            case 'L': di = 0; break;
+            case 'R': di = 1; break;
+            default: return -1;
+            }
+            int n = std::stoi(std::string(line.begin() + 2, line.end()));
+            for (int i = 0; i < n; ++i) {
+                xh += d[di][0];
+                yh += d[di][1];
+                /*
+                012
+                123
+                23.
+                */
+                switch (abs(xt - xh) + abs(yt - yh)) {
+                case 0: break;
+                case 1: break;
+                case 2:
+                    if (xh == xt) {
+                        yt += sign(yh - yt);
+                    }
+                    else if (yh == yt) {
+                        xt += sign(xh - xt);
+                    }
+                    break;
+                case 3:
+                    xt += sign(xh - xt);
+                    yt += sign(yh - yt);
+                    break;
+                default:
+                    return -2;
+                }
+
+                t.insert(std::make_pair(xt, yt));
+            }
+        }
+        return static_cast<int>(t.size());
+    }
+
+    std::pair<int, int> move(int di, std::pair<int, int> p) {
+        static std::vector<std::vector<int>> d = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+        return std::make_pair(p.first + d[di][0], p.second + d[di][1]);
+    }
+
+    std::pair<int, int> follow(std::pair<int, int> h, std::pair<int, int> t) {
+
+        switch (abs(h.first - t.first) + abs(h.second - t.second)) {
+        case 0: return t;
+        case 1: return t;
+        case 2:
+            if (h.first == t.first) {
+                t.second += sign(h.second - t.second);
+            }
+            else if (h.second == t.second) {
+                t.first += sign(h.first - t.first);
+            }
+            break;
+        case 3:
+        case 4:
+            t.first += sign(h.first - t.first);
+            t.second += sign(h.second - t.second);
+            break;
+        default:
+            throw "wtf";
+        }
+        return t;
+    }
+
+    int day9_2(std::vector<std::string> lines) {
+        std::set<std::pair<int, int>> t;
+        std::vector<std::pair<int, int>> rope(10, { 0 , 0 });
+        for (const auto& line : lines) {
+            int di;
+            switch (line[0]) {
+            case 'U': di = 2; break;
+            case 'D': di = 3; break;
+            case 'L': di = 0; break;
+            case 'R': di = 1; break;
+            default: return -1;
+            }
+            int n = std::stoi(std::string(line.begin() + 2, line.end()));
+            for (int i = 0; i < n; ++i) {
+                rope[0] = move(di, rope[0]);
+                for (int j = 0; j < rope.size() - 1; ++j) {
+                    rope[j + 1] = follow(rope[j], rope[j + 1]);
+                }
+                t.insert(rope.back());
+            }
+        }
+        return static_cast<int>(t.size());
+    }
+}
+
+
 int main()
 {
     // std::cout << day1_1(read_input("day1.txt")) << std::endl;
@@ -435,8 +543,9 @@ int main()
     // std::cout << "day 6.2: " << day6(read_input("day6.txt"), 14) << "\n";
     // std::cout << day7().first(read_input("day7.txt")) << std::endl;
     // std::cout << day7().second(read_input("day7.txt")) << std::endl;
-    std::cout << day8_1(read_input("day8.txt")) << std::endl;
-    std::cout << day8_2(read_input("day8.txt")) << std::endl;
-
+    // std::cout << day8_1(read_input("day8.txt")) << std::endl;
+    // std::cout << day8_2(read_input("day8.txt")) << std::endl;
+    std::cout << day9::day9_1(read_input("day9.txt")) << std::endl;
+    std::cout << day9::day9_2(read_input("day9.txt")) << std::endl;
     return 0;
 }
