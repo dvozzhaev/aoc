@@ -526,6 +526,66 @@ namespace day9 {
     }
 }
 
+int day10_1(std::vector<std::string> lines) {
+    int i = 0;
+    int X = 1, C = 1;
+    bool half_cycle = false;
+    int signal = 0;
+    while (i < lines.size()) {
+        if ((C - 20) % 40 == 0) {
+            int S = C * X;
+            signal += S;
+        }
+        if (lines[i] == "noop") { ++i; }
+        else if (lines[i].starts_with("addx")) {
+            if (half_cycle) {
+                half_cycle = false;
+                X += std::stoi(std::string(lines[i].begin() + 5, lines[i].end()));
+                ++i;
+            }
+            else {
+                half_cycle = true;
+            }
+        }
+        else {
+            return -1;
+        }
+
+        C++;
+    }
+
+    return signal;
+}
+
+std::string day10_2(std::vector<std::string> lines) {
+    int i = 0;
+    int X = 1, C = 0;
+    bool half_cycle = false;
+    std::string r;
+
+    while (i < lines.size()) {
+        if (C % 40 == 0) {
+            r += '\n';
+        }
+        r += ((abs(X - (C % 40)) < 2) ? '#' : '.');
+        if (lines[i] == "noop") { ++i; }
+        else if (lines[i].starts_with("addx")) {
+            if (half_cycle) {
+                half_cycle = false;
+                X += std::stoi(std::string(lines[i].begin() + 5, lines[i].end()));
+                ++i;
+            }
+            else {
+                half_cycle = true;
+            }
+        }
+        else {
+            throw "invalid op";
+        }
+        C++;
+    }
+    return r;
+}
 
 int main()
 {
@@ -545,7 +605,9 @@ int main()
     // std::cout << day7().second(read_input("day7.txt")) << std::endl;
     // std::cout << day8_1(read_input("day8.txt")) << std::endl;
     // std::cout << day8_2(read_input("day8.txt")) << std::endl;
-    std::cout << day9::day9_1(read_input("day9.txt")) << std::endl;
-    std::cout << day9::day9_2(read_input("day9.txt")) << std::endl;
+    // std::cout << day9::day9_1(read_input("day9.txt")) << std::endl;
+    // std::cout << day9::day9_2(read_input("day9.txt")) << std::endl;
+    std::cout << day10_1(read_input("day10.txt")) << std::endl;
+    std::cout << day10_2(read_input("day10.txt")) << std::endl;
     return 0;
 }
