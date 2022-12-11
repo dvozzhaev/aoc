@@ -10,6 +10,8 @@
 #include <regex>
 #include <map>
 #include <deque>
+#include <functional>
+#include "BigInt.hpp"
 
 std::vector<std::string> read_input(std::string path) {
     std::vector<std::string> result;
@@ -587,6 +589,104 @@ std::string day10_2(std::vector<std::string> lines) {
     return r;
 }
 
+int day11_1() {
+    struct Monkey {
+        int test, left, right;
+        std::function<int(int)> op;
+        std::vector<int> items;
+        int score;
+    };
+    /*
+    std::vector<Monkey> monkeys = {
+        {23, 2, 3, [](int n) { return n * 19; }, { 79, 98 }, },
+        {19, 2, 0, [](int n) { return n + 6;  }, { 54, 65, 75, 74 }, },
+        {13, 1, 3, [](int n) { return n * n;  }, { 79, 60, 97 }, },
+        {17, 0, 1, [](int n) { return n + 3;  }, { 74 }, },
+    };
+    */
+    std::vector<Monkey> monkeys = {
+        { 2, 1, 6,  [](int n) { return n * 17; }, { 83, 62, 93                     } },
+        { 17, 6, 3, [](int n) { return n + 1;  }, { 90, 55                         } },
+        { 19, 7, 5, [](int n) { return n + 3;  }, { 91, 78, 80, 97, 79, 88         } },
+        { 3, 7, 2,  [](int n) { return n + 5;  }, { 64, 80, 83, 89, 59             } },
+        { 5, 0, 1,  [](int n) { return n * n;  }, { 98, 92, 99, 51                 } },
+        { 13, 4, 0, [](int n) { return n + 2;  }, { 68, 57, 95, 85, 98, 75, 98, 75 } },
+        { 7, 3, 2,  [](int n) { return n + 4;  }, { 74                             } },
+        { 11, 4, 5, [](int n) { return n * 19; }, { 68, 64, 60, 68, 87, 80, 82     } },
+    };
+
+    for (int i = 0; i < 20; ++i) {
+        for (auto& monkey : monkeys) {
+            for (int item : monkey.items) {
+                item = monkey.op(item) / 3;
+                int next = item % monkey.test == 0 ? monkey.left : monkey.right;
+                monkeys[next].items.push_back(item);
+                ++monkey.score;
+            }
+            monkey.items.clear();
+        }
+    }
+
+    std::vector<int> scores;
+    for (auto& monkey : monkeys) {
+        scores.push_back(monkey.score);
+    }
+    std::sort(scores.rbegin(), scores.rend());
+    return scores[0] * scores[1];
+}
+
+int64_t day11_2() {
+    struct Monkey {
+        int test, left, right;
+        std::function<int64_t(int64_t)> op;
+        std::vector<int64_t> items;
+        int score;
+    };
+    
+    /*
+    std::vector<Monkey> monkeys = {
+        {23, 2, 3, [](int64_t n) { return n * 19; }, { 79, 98 }, },
+        {19, 2, 0, [](int64_t n) { return n + 6;  }, { 54, 65, 75, 74 }, },
+        {13, 1, 3, [](int64_t n) { return n * n;  }, { 79, 60, 97 }, },
+        {17, 0, 1, [](int64_t n) { return n + 3;  }, { 74 }, },
+    };
+    */
+
+    std::vector<Monkey> monkeys = {
+        { 2, 1, 6,  [](int64_t n) { return n * 17; }, { 83, 62, 93                     } },
+        { 17, 6, 3, [](int64_t n) { return n + 1;  }, { 90, 55                         } },
+        { 19, 7, 5, [](int64_t n) { return n + 3;  }, { 91, 78, 80, 97, 79, 88         } },
+        { 3, 7, 2,  [](int64_t n) { return n + 5;  }, { 64, 80, 83, 89, 59             } },
+        { 5, 0, 1,  [](int64_t n) { return n * n;  }, { 98, 92, 99, 51                 } },
+        { 13, 4, 0, [](int64_t n) { return n + 2;  }, { 68, 57, 95, 85, 98, 75, 98, 75 } },
+        { 7, 3, 2,  [](int64_t n) { return n + 4;  }, { 74                             } },
+        { 11, 4, 5, [](int64_t n) { return n * 19; }, { 68, 64, 60, 68, 87, 80, 82     } },
+    };
+    int n = 1;
+    for (auto& monkey : monkeys) {
+        n *= monkey.test;
+    }
+
+    for (int i = 0; i < 10000; ++i) {
+        for (auto& monkey : monkeys) {
+            for (int64_t item : monkey.items) {
+                item = monkey.op(item) % (n);
+                int next = item % monkey.test == 0 ? monkey.left : monkey.right;
+                monkeys[next].items.push_back(item);
+                ++monkey.score;
+            }
+            monkey.items.clear();
+        }
+    }
+
+    std::vector<int64_t> scores;
+    for (auto& monkey : monkeys) {
+        scores.push_back(monkey.score);
+    }
+    std::sort(scores.rbegin(), scores.rend());
+    return scores[0] * scores[1];
+}
+
 int main()
 {
     // std::cout << day1_1(read_input("day1.txt")) << std::endl;
@@ -607,7 +707,10 @@ int main()
     // std::cout << day8_2(read_input("day8.txt")) << std::endl;
     // std::cout << day9::day9_1(read_input("day9.txt")) << std::endl;
     // std::cout << day9::day9_2(read_input("day9.txt")) << std::endl;
-    std::cout << day10_1(read_input("day10.txt")) << std::endl;
-    std::cout << day10_2(read_input("day10.txt")) << std::endl;
+    // std::cout << day10_1(read_input("day10.txt")) << std::endl;
+    // std::cout << day10_2(read_input("day10.txt")) << std::endl;
+
+    std::cout << day11_1() << std::endl;
+    std::cout << day11_2() << std::endl;
     return 0;
 }
