@@ -11,7 +11,6 @@
 #include <map>
 #include <deque>
 #include <functional>
-#include "BigInt.hpp"
 
 std::vector<std::string> read_input(std::string path) {
     std::vector<std::string> result;
@@ -687,6 +686,88 @@ int64_t day11_2() {
     return scores[0] * scores[1];
 }
 
+int day12_1(std::vector<std::string> lines) {
+    using pt = std::pair<int, int>;
+    std::vector<pt> d = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+    std::map<pt, int> path;
+    std::deque<pt> q;
+    int w = lines.size();
+    int h = lines[0].size();
+    pt end;
+    for (int x = 0; x < w; ++x) {
+        for (int y = 0; y < h; ++y) {
+            if (lines[x][y] == 'S') {
+                lines[x][y] = 'a';
+                q.push_back({ x, y });
+                path[{ x, y }] = 0;
+            }
+            if (lines[x][y] == 'E') {
+                lines[x][y] = 'z';
+                end = { x, y };
+            }
+        }
+    }
+    while (!q.empty()) {
+        pt p = q.front();
+        if (p == end) {
+            break;
+        }
+        q.pop_front();
+        int v = path[p];
+        for (pt i : d) {
+            pt n = { p.first + i.first, p.second + i.second };
+            if (n.first < 0 || n.first >= w || n.second < 0 || n.second >= h) continue;
+            if (lines[n.first][n.second] - 1 > lines[p.first][p.second]) continue;
+            if (path.find(n) == path.end()) {
+                path[n] = v + 1;
+                q.push_back(n);
+            }
+        }
+    }
+    return path[end];
+}
+
+int day12_2(std::vector<std::string> lines) {
+    using pt = std::pair<int, int>;
+    std::vector<pt> d = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+    std::map<pt, int> path;
+    std::deque<pt> q;
+    int w = lines.size();
+    int h = lines[0].size();
+    pt end;
+    for (int x = 0; x < w; ++x) {
+        for (int y = 0; y < h; ++y) {
+            if (lines[x][y] == 'S' || lines[x][y] == 'a') {
+                lines[x][y] = 'a';
+                q.push_back({ x, y });
+                path[{ x, y }] = 0;
+            }
+            if (lines[x][y] == 'E') {
+                lines[x][y] = 'z';
+                end = { x, y };
+            }
+        }
+    }
+    while (!q.empty()) {
+        pt p = q.front();
+        if (p == end) {
+            break;
+        }
+        q.pop_front();
+        int v = path[p];
+        for (pt i : d) {
+            pt n = { p.first + i.first, p.second + i.second };
+            if (n.first < 0 || n.first >= w || n.second < 0 || n.second >= h) continue;
+            if (lines[n.first][n.second] - 1 > lines[p.first][p.second]) continue;
+            if (path.find(n) == path.end() || path[n] > v + 1) {
+                path[n] = v + 1;
+                q.push_back(n);
+            }
+        }
+    }
+    return path[end];
+}
+
 int main()
 {
     // std::cout << day1_1(read_input("day1.txt")) << std::endl;
@@ -709,8 +790,17 @@ int main()
     // std::cout << day9::day9_2(read_input("day9.txt")) << std::endl;
     // std::cout << day10_1(read_input("day10.txt")) << std::endl;
     // std::cout << day10_2(read_input("day10.txt")) << std::endl;
+    // std::cout << day11_1() << std::endl;
+    // std::cout << day11_2() << std::endl;
+    std::cout << day12_2({
+            "Sabqponm",
+            "abcryxxl",
+            "accszExk",
+            "acctuvwj",
+            "abdefghi",
+        }) << std::endl;
+    std::cout << day12_1(read_input("day12.txt")) << std::endl;
+    std::cout << day12_2(read_input("day12.txt")) << std::endl;
 
-    std::cout << day11_1() << std::endl;
-    std::cout << day11_2() << std::endl;
     return 0;
 }
