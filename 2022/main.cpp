@@ -792,13 +792,6 @@ int main()
     // std::cout << day10_2(read_input("day10.txt")) << std::endl;
     // std::cout << day11_1() << std::endl;
     // std::cout << day11_2() << std::endl;
-    std::cout << day12_2({
-            "Sabqponm",
-            "abcryxxl",
-            "accszExk",
-            "acctuvwj",
-            "abdefghi",
-        }) << std::endl;
     std::cout << day12_1(read_input("day12.txt")) << std::endl;
     std::cout << day12_2(read_input("day12.txt")) << std::endl;
 
