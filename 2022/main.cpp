@@ -11,6 +11,8 @@
 #include <map>
 #include <deque>
 #include <functional>
+#include <optional>
+#include <variant>
 
 std::vector<std::string> read_input(std::string path) {
     std::vector<std::string> result;
@@ -754,18 +756,132 @@ int day12_2(std::vector<std::string> lines) {
             break;
         }
         q.pop_front();
-        int v = path[p];
         for (pt i : d) {
             pt n = { p.first + i.first, p.second + i.second };
             if (n.first < 0 || n.first >= w || n.second < 0 || n.second >= h) continue;
             if (lines[n.first][n.second] - 1 > lines[p.first][p.second]) continue;
-            if (path.find(n) == path.end() || path[n] > v + 1) {
-                path[n] = v + 1;
+            if (path.find(n) == path.end()) {
+                path[n] = path[p] + 1;
                 q.push_back(n);
             }
         }
     }
     return path[end];
+}
+
+struct Packet {
+    std::variant<int, std::vector<Packet>> storage;
+
+    Packet(int v) : storage(v) {}
+    Packet(std::vector<Packet> v) : storage(v) {}
+
+    bool is_value() const {
+        return storage.index() == 0;
+    }
+    
+    int as_value() const {
+        return std::get<0>(storage);
+    }
+
+    std::vector<Packet> as_list() const {
+        return is_value() ? std::vector<Packet>(1, as_value()) : std::get<1>(storage);
+    }
+
+    std::string to_string() const {
+        if (is_value()) return std::to_string(as_value());
+        std::string r = "[";
+        for (auto& value : as_list()) {
+            if (r.size() > 1) r += ",";
+            r += value.to_string();
+        }
+        r += "]";
+        return r;
+    }
+};
+
+enum class Order {
+    Correct, Wrong, Unknown
+};
+
+Order is_ordered(const Packet& a, const Packet& b) {
+    if (a.is_value() && b.is_value()) {
+        int d = a.as_value() - b.as_value();
+        return d < 0 ? Order::Correct : d > 0 ? Order::Wrong : Order::Unknown;
+    }
+    std::vector<Packet> left = a.as_list(), right = b.as_list();
+    int i = 0;
+    while (true) {
+        if (left.size() <= i) return right.size() > i ? Order::Correct : Order::Unknown;
+        if (right.size() <= i) return Order::Wrong;
+        Order c = is_ordered(left[i], right[i]);
+        if (c != Order::Unknown) return c;
+        ++i;
+    }
+};
+
+Packet parse_item(std::string::const_iterator& begin, std::string::const_iterator end) {
+    if (begin == end) throw "I didn't mean it";
+    if (*begin == '[') {
+        std::vector<Packet> items;
+        do {
+            ++begin;
+            if (*begin == ']') {
+                ++begin;
+                return items;
+            }
+            items.push_back(parse_item(begin, end));
+            if (*begin == ']') {
+                ++begin;
+                return items;
+            }
+        } while (*begin == ',');
+        throw "nope";
+    }
+    auto e = begin;
+    while (*e >= '0' && *e <= '9') ++e;
+    if (e == begin) throw "not digit";
+    int v = std::stoi(std::string(begin, e));
+    begin = e;
+    return v;
+}
+
+Packet parse(std::string& line) {
+    auto begin = line.begin(), end = line.end();
+    return parse_item(begin, end);
+};
+
+int day13_1(std::vector<std::string> lines) {        
+    int r = 0;
+    for (int i = 0; i < lines.size(); i += 3) {
+        if (is_ordered(parse(lines[i]), parse(lines[i + 1])) == Order::Correct) {
+            r += (i / 3) + 1;
+        }
+    }
+    return r;
+}
+
+int day13_2(std::vector<std::string> lines) {
+    int r = 0;
+    std::vector<Packet> t;
+    lines.push_back("[[2]]");
+    lines.push_back("[[6]]");
+
+    for (auto& line : lines) {
+        if (!line.empty()) {
+            t.push_back(parse(line));
+        }        
+    }
+    std::sort(t.begin(), t.end(), [](Packet& a, Packet& b) {
+        return is_ordered(a, b) == Order::Correct;
+    });
+
+    std::map<std::string, int> text;
+    
+    for (int i = 0; i < t.size(); ++i) {
+        text[t[i].to_string()] = i + 1;
+    }
+
+    return text["[[2]]"] * text["[[6]]"];
 }
 
 int main()
@@ -792,8 +908,10 @@ int main()
     // std::cout << day10_2(read_input("day10.txt")) << std::endl;
     // std::cout << day11_1() << std::endl;
     // std::cout << day11_2() << std::endl;
-    std::cout << day12_1(read_input("day12.txt")) << std::endl;
-    std::cout << day12_2(read_input("day12.txt")) << std::endl;
+    // std::cout << day12_1(read_input("day12.txt")) << std::endl;
+    // std::cout << day12_2(read_input("day12.txt")) << std::endl;
+    std::cout << day13_1(read_input("day13.txt")) << std::endl;
+    std::cout << day13_2(read_input("day13.txt")) << std::endl;
 
     return 0;
 }
