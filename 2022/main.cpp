@@ -25,6 +25,12 @@ std::vector<std::string> read_input(std::string path) {
     return result;
 }
 
+int sign(int a) {
+    return a < 0 ? -1 : a > 0 ? 1 : 0;
+}
+
+
+
 int day1_1(std::vector<std::string> lines) {
     int n = 0;
     int max = 0;
@@ -423,10 +429,6 @@ int day8_2(std::vector<std::string> lines) {
 }
 
 namespace day9 {
-    int sign(int a) {
-        return a < 0 ? -1 : a > 0 ? 1 : 0;
-    }
-
     int day9_1(std::vector<std::string> lines) {
         std::set<std::pair<int, int>> t;
         int xh = 0, xt = 0, yh = 0, yt = 0;
@@ -693,8 +695,8 @@ int day12_1(std::vector<std::string> lines) {
     std::vector<pt> d = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
     std::map<pt, int> path;
     std::deque<pt> q;
-    int w = lines.size();
-    int h = lines[0].size();
+    int w = static_cast<int>(lines.size());
+    int h = static_cast<int>(lines[0].size());
     pt end;
     for (int x = 0; x < w; ++x) {
         for (int y = 0; y < h; ++y) {
@@ -846,7 +848,7 @@ Packet parse_item(std::string::const_iterator& begin, std::string::const_iterato
 }
 
 Packet parse(std::string& line) {
-    auto begin = line.begin(), end = line.end();
+    auto begin = line.cbegin(), end = line.cend();
     return parse_item(begin, end);
 };
 
@@ -884,6 +886,140 @@ int day13_2(std::vector<std::string> lines) {
     return text["[[2]]"] * text["[[6]]"];
 }
 
+using pt = std::pair<int, int>;
+void print_cave(std::map<pt, int>& cave, pt sand) {
+    int xl = sand.first;
+    int yl = sand.second;
+    int xh = sand.first;
+    int yh = sand.second;
+    for (auto [p, c] : cave) {
+        xl = std::min(xl, p.first);
+        xh = std::max(xh, p.first);
+        yl = std::min(yl, p.second);
+        yh = std::max(yh, p.second);
+    }
+    for (int y = yl; y <= yh; ++y) {
+        for (int x = xl; x <= xh; ++x) {
+            auto it = cave.find({x, y});
+            if (sand == pt(x, y)) {
+                std::cout << "X";
+            } else if (it == cave.end()) {
+                std::cout << ".";
+            } else switch (it->second) {
+                case 1: std::cout << "#"; break;
+                case 2: std::cout << "o"; break;
+                case 3: std::cout << "~"; break;
+            }
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
+}
+
+int day14_1(std::vector<std::string> lines) {
+    std::map<pt, int> cave;
+    std::regex r("(\\d*),(\\d*)");
+    int d = 0;
+    for (auto& line : lines) {
+        auto it = std::sregex_iterator(line.begin(), line.end(), r);
+        int px = 0, py = 0;
+        while (it != std::sregex_iterator()) {
+            int x = std::stoi((*it)[1]);
+            int y = std::stoi((*it)[2]);
+            ++it;
+            if (px == 0) {
+                px = x; py = y;
+                continue;
+            }
+            while (px != x || py != y) {
+                cave[{px, py}] = 1;
+                px += sign(x - px);
+                py += sign(y - py);
+            }
+            cave[{px, py}] = 1;
+            d = std::max(d, py + 2);
+        }
+    }
+    
+    int sand = 0;
+    while (true) {
+        int x = 500, y = 0;
+        while (y <= d) {
+            if (cave.find({x, y + 1}) == cave.end()) {
+                y = y + 1;
+            } else if (cave.find({x - 1, y + 1}) == cave.end()) {
+                x = x - 1;
+                y = y + 1;
+            } else if (cave.find({x + 1, y + 1}) == cave.end()) {
+                x = x + 1;
+                y = y + 1;
+            } else {
+                cave[{x, y}] = 2;
+                break;
+            }
+        }
+        // print_cave(cave, {x, y});
+        if (y >= d) {
+            break;
+        }
+        sand += 1;
+    }
+    return sand;
+}
+
+int day14_2(std::vector<std::string> lines) {
+    std::map<pt, int> cave;
+    std::regex r("(\\d*),(\\d*)");
+    int d = 0;
+    for (auto& line : lines) {
+        auto it = std::sregex_iterator(line.begin(), line.end(), r);
+        int px = 0, py = 0;
+        while (it != std::sregex_iterator()) {
+            int x = std::stoi((*it)[1]);
+            int y = std::stoi((*it)[2]);
+            ++it;
+            if (px == 0) {
+                px = x; py = y;
+                continue;
+            }
+            while (px != x || py != y) {
+                cave[{px, py}] = 1;
+                px += sign(x - px);
+                py += sign(y - py);
+            }
+            cave[{px, py}] = 1;
+            d = std::max(d, py + 2);
+        }
+    }
+    for (int x = 500 - d - 1; x <= 500 + d + 1; ++x) {
+        cave[{x, d}] = 3;
+    }
+    print_cave(cave, {500, 0});
+    int sand = 0;
+    while (cave[{500, 0}] == 0) {
+        int x = 500, y = 0;
+        while (y <= d) {
+            if (cave.find({x, y + 1}) == cave.end()) {
+                y = y + 1;
+            } else if (cave.find({x - 1, y + 1}) == cave.end()) {
+                x = x - 1;
+                y = y + 1;
+            } else if (cave.find({x + 1, y + 1}) == cave.end()) {
+                x = x + 1;
+                y = y + 1;
+            } else {
+                cave[{x, y}] = 2;
+                break;
+            }
+        }
+        if (y >= d) {
+            break;
+        }
+        sand += 1;
+    }
+    print_cave(cave, {500, 0});
+    return sand;
+}
 int main()
 {
     // std::cout << day1_1(read_input("day1.txt")) << std::endl;
@@ -910,8 +1046,13 @@ int main()
     // std::cout << day11_2() << std::endl;
     // std::cout << day12_1(read_input("day12.txt")) << std::endl;
     // std::cout << day12_2(read_input("day12.txt")) << std::endl;
-    std::cout << day13_1(read_input("day13.txt")) << std::endl;
-    std::cout << day13_2(read_input("day13.txt")) << std::endl;
-
+    // std::cout << day13_1(read_input("day13.txt")) << std::endl;
+    // std::cout << day13_2(read_input("day13.txt")) << std::endl;
+    //
+    std::cout << day14_1(read_input("day14.txt")) << std::endl;
+    std::cout << day14_2(read_input("day14.txt")) << std::endl;
+    //
+    std::cout << day14_2({"498,4 -> 498,6 -> 496,6", "503,4 -> 502,4 -> 502,9 -> 494,9"}) << std::endl;
+    
     return 0;
 }
