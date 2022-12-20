@@ -1283,6 +1283,221 @@ struct day16 {
     }
 };
 
+struct day17 {
+    std::vector<std::vector<int>> floor;
+    std::vector<std::vector<std::vector<int>>> shapes;
+    
+    day17() {
+        floor = std::vector<std::vector<int>>(7);
+        shapes =
+        {
+            { {1, 1, 1, 1} },
+            {
+                { 0, 1, 0 },
+                { 1, 1, 1 },
+                { 0, 1, 0 },
+            },
+            {
+                { 0, 0, 1 },
+                { 0, 0, 1 },
+                { 1, 1, 1 },
+            },
+            {
+                { 1 },
+                { 1 },
+                { 1 },
+                { 1 },
+            },
+            {
+                { 1, 1 },
+                { 1, 1 },
+            },
+        };
+    }
+    
+    void print(pt f, int d, std::vector<std::vector<int>>& shape) {
+        int h = static_cast<int>(shape.size());
+        int w = static_cast<int>(shape[0].size());
+        for (int y = d; y >= 0; --y) {
+            std::cout << '|';
+            for (int x = 0; x < floor.size(); ++x) {
+                bool cover = y <= f.y && y > f.y - h && x >= f.x && x < f.x + w;
+                bool shape_full = cover && shape[f.y - y][x - f.x];
+                bool rock = floor[x][y] > 0;
+                if (rock) {
+                    if (shape_full) std::cout << "?";
+                    else std::cout << "#";
+                } else if (shape_full) std::cout << "@";
+                else std::cout << ".";
+            }
+            std::cout << "|\n";
+        }
+        std::cout << "+-------+\n\n";
+    }
+
+    void print(int n = 0) {
+        int h = static_cast<int>(floor[0].size());
+        for (int y = 0; y < n || (n == 0 && y < h); ++y) {
+            std::cout << '|';
+            for (int x = 0; x < floor.size(); ++x) {
+                if (floor[x][h - y - 1] > 0) std::cout << "#";
+                else std::cout << ".";
+            }
+            std::cout << "|\n";
+        }
+        std::cout << "+~~~~~~~+\n\n";
+    }
+    
+    void drop(int sn, int& move, int& height, std::string& input) {
+        auto& shape = shapes[sn % shapes.size()];
+        int h = static_cast<int>(shape.size());
+        int w = static_cast<int>(shape[0].size());
+        int d = height + h + 3 - 1;
+        pt f(2, d);
+        int m = 1;
+        for (auto& s : floor) {
+            while (s.size() <= d) s.push_back(0);
+        }
+        do {
+            int s = input[move % input.size()] == '>' ? 1 : -1;
+            move += 1;
+            if (f.x == 0 && s == -1) s = 0;
+            if (f.x + w >= floor.size() && s == 1) s = 0;
+            for (int x = 0; x < w; ++x) {
+                for (int y = 0; y < h; ++y) {
+                    bool rock = floor[f.x + x + s][f.y - y] != 0;
+                    if (shape[y][x] != 0 && rock) {
+                        s = 0;
+                    }
+                }
+            }
+            f.x += s;
+            m = 1;
+            if (f.y - h < 0) m = 0;
+            for (int x = 0; x < w; ++x) {
+                for (int y = 0; y < h; ++y) {
+                    if (shape[y][x] != 0 && floor[f.x + x][f.y - y - m] != 0) {
+                        m = 0;
+                    }
+                }
+            }
+            f.y -= m;
+        } while (m > 0);
+        
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                if (shape[y][x] != 0) {
+                    floor[f.x + x][f.y - y] = 1;
+                    height = std::max(height, f.y - y + 1);
+                }
+            }
+        }
+    }
+    
+    int64_t second(std::string input) {
+        int move = 0;
+        int sn = 0;
+        int height = 0;
+        /*
+        std::map<std::tuple<int, int, int>, int> c;
+        for (int i = 0; i < 50; ++i) {
+            int pm = move, ph = height;
+            for (int i = 0; i < 349 * 5; ++i) {
+                drop(sn++, move, height, input);
+            }
+            /*
+            std::cout
+            << "dm = " << move - pm
+            << ", jet = " << move % input.size()
+            << ", dh = " << height - ph << std::endl;
+            ++c[{move - pm, move % input.size(), height - ph}];
+        }
+        for (auto[k, v] : c) {
+            auto[dm, jet, dh] = k;
+            std::cout << "[" << dm <<"," << jet << "," << dh << "] = " << v << std::endl;
+        }*/
+        
+        int64_t iters = 1000000000000;
+        int64_t size = 349 * 5;
+        iters -= size;
+        int64_t tail_iters = iters % size;
+        int64_t body = iters / size;
+        
+        int64_t head_iters = size;
+        for (int i = 0; i < head_iters; ++i) {
+            drop(sn++, move, height, input);
+        }
+        int64_t head_height = height;
+        
+        for (int i = 0; i < size; ++i) {
+            drop(sn++, move, height, input);
+        }
+        int64_t body_height = height - head_height;
+        
+        int64_t old_height = height;
+        for (int i = 0; i < tail_iters; ++i) {
+            drop(sn++, move, height, input);
+        }
+        int64_t tail_height = height - old_height;
+        // 1591977080108
+        // 1591977077342
+        return head_height + body * body_height + tail_height;
+    }
+    
+    int first(std::string input, int n = 2022, int height = 0) {
+        int move = 0;
+        for (int i = 0; i < n; ++i) {
+            auto& shape = shapes[i % shapes.size()];
+            int h = static_cast<int>(shape.size());
+            int w = static_cast<int>(shape[0].size());
+            int d = height + h + 3 - 1;
+            pt f(2, d);
+            int m = 1;
+            for (auto& s : floor) {
+                while (s.size() <= d) s.push_back(0);
+            }
+            do {
+                // print(f, d, shape);
+                int s = input[move % input.size()] == '>' ? 1 : -1;
+                move += 1;
+                if (f.x == 0 && s == -1) s = 0;
+                if (f.x + w >= floor.size() && s == 1) s = 0;
+                for (int x = 0; x < w; ++x) {
+                    for (int y = 0; y < h; ++y) {
+                        bool rock = floor[f.x + x + s][f.y - y] != 0;
+                        if (shape[y][x] != 0 && rock) {
+                            s = 0;
+                        }
+                    }
+                }
+                f.x += s;
+                m = 1;
+                if (f.y - h < 0) m = 0;
+                for (int x = 0; x < w; ++x) {
+                    for (int y = 0; y < h; ++y) {
+                        if (shape[y][x] != 0 && floor[f.x + x][f.y - y - m] != 0) {
+                            m = 0;
+                        }
+                    }
+                }
+                f.y -= m;
+            } while (m > 0);
+            
+            for (int x = 0; x < w; ++x) {
+                for (int y = 0; y < h; ++y) {
+                    if (shape[y][x] != 0) {
+                        floor[f.x + x][f.y - y] = 1;
+                        height = std::max(height, f.y - y + 1);
+                    }
+                }
+            }
+            // print(f, d, shape); std::cout << "============\n";
+        }
+
+        return height;
+    }
+};
+
 
 int main()
 {
@@ -1318,6 +1533,10 @@ int main()
     // std::cout << day15_2(read_input("day15.txt"), 4000000) << std::endl;
     // std::cout << day16(read_input("day16.txt")).first() << std::endl;
     // std::cout << day16(read_input("day16.txt")).first_bfs() << std::endl;
-    std::cout << day16(read_input("day16.txt")).second() << std::endl;
+    // std::cout << day16(read_input("day16.txt")).second() << std::endl;
+    // std::cout << day17().first(">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>") << std::endl;
+    // std::cout << day17().first(read_input("day17.txt")[0]) << std::endl;
+    // std::cout << day17().second(">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>") << std::endl;
+    std::cout << day17().second(read_input("day17.txt")[0]) << std::endl;
     return 0;
 }
