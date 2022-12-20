@@ -1598,16 +1598,16 @@ int day20_1(std::vector<std::string> lines) {
         nums.erase(node);
         while(n != 0) {
             if (n < 0) {
-                npos = std::prev(npos);
                 if (npos == nums.begin()) {
                     npos = nums.end();
                 }
+                npos = std::prev(npos);
                 ++n;
             } else {
-                npos = std::next(npos);
                 if (npos == nums.end()) {
                     npos = nums.begin();
                 }
+                npos = std::next(npos);
                 --n;
             }
         }
@@ -1628,26 +1628,6 @@ int day20_1(std::vector<std::string> lines) {
     return a + b + c;
 }
 
-void print(std::list<int64_t>& nodes, std::list<int64_t>::iterator npos) {
-    std::list<int64_t>::iterator b = nodes.begin();
-    while (b != nodes.end()) {
-        if (b == npos) std::cout << " * ";
-        std::cout << *b << " ";
-        ++b;
-    }
-    if (nodes.end() == npos) std::cout << " * ";
-    std::cout << "\n";
-}
-
-void print(std::list<int64_t>& nodes) {
-    std::list<int64_t>::iterator b = nodes.begin();
-    while (b != nodes.end()) {
-        std::cout << *b << " ";
-        ++b;
-    }
-    std::cout << "\n";
-}
-
 int64_t day20_2(std::vector<std::string> lines) {
     std::list<int64_t> nums;
     using node_type = decltype(nums)::iterator;
@@ -1656,18 +1636,14 @@ int64_t day20_2(std::vector<std::string> lines) {
         if (line.empty()) continue;
         nodes.push_back(nums.insert(nums.end(), 811589153 * std::stoll(line)));
     }
-    for (int i = 0; i < 1; ++i) {
-        // print(nums);
+    for (int i = 0; i < 10; ++i) {
         int pass = 0;
         for (int j = 0; j < nodes.size(); ++j) {
             node_type npos = std::next(nodes[j]);
             int64_t val = *nodes[j];
-            int64_t n = abs(val) % (nums.size() - 1);
-            n *= sign(val);
-            std::cout << "move: " << n << " " << val << "\n";
+            int64_t n = (abs(val) % (nums.size() - 1)) * sign(val);
             nums.erase(nodes[j]);
             while(n != 0) {
-                print(nums, npos);
                 if (n < 0) {
                     if (npos == nums.begin()) {
                         npos = nums.end();
@@ -1675,21 +1651,16 @@ int64_t day20_2(std::vector<std::string> lines) {
                     npos = std::prev(npos);
                     ++n;
                 } else {
-                    npos = std::next(npos);
                     if (npos == nums.end()) {
                         npos = nums.begin();
                     }
+                    npos = std::next(npos);
                     --n;
                 }
             }
-            print(nums, npos);
             nodes[j] = nums.insert(npos, val);
-            print(nums);
-            std::cout << "\n";
         }
     }
-    // 1 9 7 -6 -9 -7 0
-    // 0, -2434767459, 3246356612, -1623178306, 2434767459, 1623178306, 811589153
     int64_t a = 0, b = 0, c = 0;
     int p = 0;
     auto it = std::find(nums.begin(), nums.end(), 0);
@@ -1747,9 +1718,6 @@ int main()
     // std::cout << day18_1(read_input("day18.txt")) << std::endl;
     // std::cout << day18_2(read_input("day18.txt")) << std::endl;
     std::cout << day20_1(read_input("day20.txt")) << std::endl;
-    std::cout << day20_1({"1", "2", "-3", "3", "-2", "0", "4"}) << std::endl;
-    std::cout << day20_2({"1", "2", "-3", "3", "-2", "0", "4"}) << std::endl;
-    // std::cout << day20_2({"1", "9", "-9", "7", "-6", "0", "-7"}) << std::endl;
     std::cout << day20_2(read_input("day20.txt")) << std::endl;
     return 0;
 }
