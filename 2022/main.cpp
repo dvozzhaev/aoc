@@ -29,7 +29,24 @@ int sign(int a) {
     return a < 0 ? -1 : a > 0 ? 1 : 0;
 }
 
-
+struct pt {
+    int x, y;
+    pt() : pt(0, 0) {}
+    pt(std::string x, std::string y) : pt(std::stoi(x), std::stoi(y)) {}
+    pt(int x, int y) : x(x), y(y) {}
+    
+    bool operator == (const pt& other) const {
+        return x == other.x && y == other.y;
+    }
+    
+    bool operator < (const pt& other) const {
+        return x != other.x ? x < other.x : y < other.y;
+    }
+    
+    pt operator -(const pt& other) const {
+        return pt(x - other.x, y - other.y);
+    }
+};
 
 int day1_1(std::vector<std::string> lines) {
     int n = 0;
@@ -736,8 +753,8 @@ int day12_2(std::vector<std::string> lines) {
     std::vector<pt> d = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
     std::map<pt, int> path;
     std::deque<pt> q;
-    int w = lines.size();
-    int h = lines[0].size();
+    int w = static_cast<int>(lines.size());
+    int h = static_cast<int>(lines[0].size());
     pt end;
     for (int x = 0; x < w; ++x) {
         for (int y = 0; y < h; ++y) {
@@ -863,7 +880,6 @@ int day13_1(std::vector<std::string> lines) {
 }
 
 int day13_2(std::vector<std::string> lines) {
-    int r = 0;
     std::vector<Packet> t;
     lines.push_back("[[2]]");
     lines.push_back("[[6]]");
@@ -886,17 +902,16 @@ int day13_2(std::vector<std::string> lines) {
     return text["[[2]]"] * text["[[6]]"];
 }
 
-using pt = std::pair<int, int>;
 void print_cave(std::map<pt, int>& cave, pt sand) {
-    int xl = sand.first;
-    int yl = sand.second;
-    int xh = sand.first;
-    int yh = sand.second;
+    int xl = sand.x;
+    int yl = sand.y;
+    int xh = sand.x;
+    int yh = sand.y;
     for (auto [p, c] : cave) {
-        xl = std::min(xl, p.first);
-        xh = std::max(xh, p.first);
-        yl = std::min(yl, p.second);
-        yh = std::max(yh, p.second);
+        xl = std::min(xl, p.x);
+        xh = std::max(xh, p.x);
+        yl = std::min(yl, p.y);
+        yh = std::max(yh, p.y);
     }
     for (int y = yl; y <= yh; ++y) {
         for (int x = xl; x <= xh; ++x) {
@@ -1020,6 +1035,255 @@ int day14_2(std::vector<std::string> lines) {
     print_cave(cave, {500, 0});
     return sand;
 }
+
+int lsq(pt p) {
+    return abs(p.x) + abs(p.y);
+}
+
+int day15_1(std::vector<std::string> lines, int y) {
+    std::regex r("Sensor at x=([-0-9]*), y=([-0-9]*): closest beacon is at x=([-0-9]*), y=([-0-9]*)");
+    std::vector<std::pair<pt, int>> m;
+    for (auto& line : lines) {
+        if (line.empty()) continue;
+        auto it = *std::sregex_iterator(line.begin(), line.end(), r);
+        pt s(it[1], it[2]), b(it[3], it[4]);
+        int d = lsq(s - b);
+        m.push_back({s, d});
+    }
+    
+    std::vector<pt> ranges;
+    for (auto& p : m) {
+        int d = (p.second - abs(p.first.y - y));
+        if (d < 0) continue;
+        int left = p.first.x - d;
+        int right = p.first.x + d;
+        ranges.push_back({left, right});
+    }
+    std::sort(ranges.begin(), ranges.end());
+    int result = 0;
+    pt c = ranges[0];
+    for(pt p : ranges) {
+        if (c.y < p.x) {
+            result += c.y - c.x;
+            c = p;
+        } else {
+            c.y = std::max(c.y, p.y);
+        }
+    }
+    return result + c.y - c.x;
+}
+
+int64_t day15_2(std::vector<std::string> lines, int w) {
+    std::regex r("Sensor at x=([-0-9]*), y=([-0-9]*): closest beacon is at x=([-0-9]*), y=([-0-9]*)");
+    std::vector<std::pair<pt, int>> m;
+    for (auto& line : lines) {
+        if (line.empty()) continue;
+        auto it = *std::sregex_iterator(line.begin(), line.end(), r);
+        pt s(it[1], it[2]), b(it[3], it[4]);
+        int d = lsq(s - b);
+        m.push_back({s, d});
+    }
+    pt c;
+    while(c.x <= w && c.y <= w) {
+        bool move = false;
+        for (auto [s, d] : m) {
+            if (lsq(c - s) <= d) {
+                int x = std::max(c.x, s.x + d - abs(s.y - c.y) + 1);
+                move |= c.x != x;
+                c.x = x;
+            }
+        }
+        if (!move) {
+            return static_cast<int64_t>(c.x) * 4000000 + c.y;
+        }
+        if (c.x > w) {
+            c.x = 0;
+            c.y += 1;
+        }
+    }
+    return -1;
+}
+
+struct day16 {
+    std::map<int, int> valves;
+    std::vector<int> targets;
+    std::vector<std::vector<int>> routes;
+    size_t size;
+
+    day16(std::vector<std::string> lines) {
+        std::regex r("Valve (..) has flow rate=(\\d*); tunnels? leads? to valves? (.*)");
+        std::map<std::string, int> rooms;
+        std::map<int, std::set<int>> tunnels;
+        
+        for (auto& line : lines) {
+            if (line.empty()) continue;
+            auto it = *std::sregex_iterator(line.begin(), line.end(), r);
+            rooms[it[1]] = 0;
+        }
+        
+        int num = 0;
+        for (auto& [k, v] : rooms) {
+            v = num++;
+        }
+        size = rooms.size();
+        
+        for (auto& line : lines) {
+            if (line.empty()) continue;
+            auto it = *std::sregex_iterator(line.begin(), line.end(), r);
+            int n = rooms[it[1]];
+            valves[n] = std::stoi(it[2]);
+            if (valves[n] > 0) targets.push_back(n);
+            std::string t = it[3];
+            for (int i = 0; i < t.size(); i += 4) {
+                tunnels[n].insert(rooms[t.substr(i, 2)]);
+            }
+        }
+        std::sort(targets.begin(), targets.end());
+        for (int i = 0; i < size; ++i) {
+            routes.push_back(std::vector(size, -1));
+        }
+        for (int i = 0; i < size; ++i) {
+            routes[i][i] = 0;
+            for (int t : tunnels[i]) {
+                routes[i][t] = 1;
+                routes[t][i] = 1;
+            }
+        }
+        bool updated;
+        do {
+            updated = false;
+            for (int i = 0; i < size; ++i) {
+                for (int j = 0; j < size; ++j) {
+                    if (i == j) continue;
+                    for (int k = 0; k < size; ++k) {
+                        if (i == k || j == k) continue;
+                        if (routes[i][k] != -1 && routes[k][j] != -1) {
+                            int c = routes[i][k] + routes[k][j];
+                            if (c < routes[i][j] || routes[i][j] == -1) {
+                                routes[i][j] = c;
+                                routes[j][i] = c;
+                                updated = true;
+                            }
+                        }
+                    }
+                }
+            }
+        } while (updated);
+    }
+
+    int first_dp(int room, int time, std::set<int> open) {
+        if (time == 0) return 0;
+        int score = 0;
+        if (room != 0) {
+            time -= 1;
+            open.insert(room);
+        }
+        for (int t : targets) {
+            int utime = time - routes[room][t];
+            if (!open.contains(t) && utime > 0){
+                score = std::max(score, first_dp(t, utime, open));
+            }
+        }
+        return score + valves[room] * time;
+    }
+    
+    int first() {
+        return first_dp(0, 30, {});
+    }
+    
+    int first_bfs() {
+        struct state {
+            int room;
+            int time;
+            int score;
+            std::set<int> open;
+        };
+        int max = 0;
+        std::deque<state> bfs;
+        bfs.push_back({0, 0, 0, {}});
+        while (!bfs.empty()) {
+            state s = bfs.front();
+            bfs.pop_front();
+            max = std::max(max, s.score);
+            for (int t : targets) {
+                if (!s.open.contains(t)) {
+                    int time = s.time + routes[s.room][t] + 1;
+                    int score = (30 - time) * valves[t];
+                    if (score > 0) {
+                        std::set<int> open(s.open);
+                        open.insert(t);
+                        bfs.push_back({ t, time, s.score + score, open });
+                    }
+                }
+            }
+        }
+        return max;
+    }
+    
+    std::set<std::tuple<int, int, int, std::set<int>>> seen;
+    int hit = 0, test = 0;
+    int second_dp(int me, int me_steps, int slon, int slon_steps, int time, std::set<int> open, bool diag = false) {
+        ++test;
+        if (time <= 0)
+            return 0;
+                
+        int score = 0;
+        int local = 0;
+        if (me_steps == 0) {
+            local += time * valves[me];
+            open.insert(me);
+        }
+        if (slon_steps == 0) {
+            local += time * valves[slon];
+            open.insert(slon);
+        }
+
+        if (me_steps == 0 && slon_steps == 0) {
+            for (int m : targets) {
+                if (open.contains(m)) continue;
+                for (int s : targets) {
+                    if (s == m || open.contains(s)) continue;
+                    int me_open = routes[me][m] + 1;
+                    int slon_open = routes[slon][s] + 1;
+                    int dt = std::min(me_open, slon_open);
+                    if (time <= dt) continue;
+                    if (diag) std::cout << m << " " << s << " " << hit << " " << test << " " << score << "\n";
+                    score = std::max(score, second_dp(m, me_open - dt, s, slon_open - dt, time - dt, open));
+                }
+            }
+        } else if (me_steps == 0) {
+            // I'll go for a walk while slon works.
+            score = second_dp(0, time, slon, 0, time - slon_steps, open);
+            for (int m : targets) {
+                if (open.contains(m) || m == slon) continue;
+                int me_open = routes[me][m] + 1;
+                int slon_open = slon_steps;
+                int dt = std::min(me_open, slon_open);
+                if (time <= dt) continue;
+                score = std::max(score, second_dp(m, me_open - dt, slon, slon_open - dt, time - dt, open));
+            }
+        } else if (slon_steps == 0) {
+            for (int s : targets) {
+                if (open.contains(s) || s == me) continue;
+                int me_open = me_steps;
+                int slon_open = routes[slon][s] + 1;
+                int dt = std::min(me_open, slon_open);
+                if (time <= dt) continue;
+                score = std::max(score, second_dp(me, me_open - dt, s, slon_open - dt, time - dt, open));
+            }
+        } else {
+            throw "wtf";
+        }
+        return score + local;
+    }
+
+    
+    int second() {
+        return second_dp(0, 0, 0, 0, 26, {}, true);
+    }
+};
+
+
 int main()
 {
     // std::cout << day1_1(read_input("day1.txt")) << std::endl;
@@ -1048,11 +1312,12 @@ int main()
     // std::cout << day12_2(read_input("day12.txt")) << std::endl;
     // std::cout << day13_1(read_input("day13.txt")) << std::endl;
     // std::cout << day13_2(read_input("day13.txt")) << std::endl;
-    //
-    std::cout << day14_1(read_input("day14.txt")) << std::endl;
-    std::cout << day14_2(read_input("day14.txt")) << std::endl;
-    //
-    std::cout << day14_2({"498,4 -> 498,6 -> 496,6", "503,4 -> 502,4 -> 502,9 -> 494,9"}) << std::endl;
-    
+    // std::cout << day14_1(read_input("day14.txt")) << std::endl;
+    // std::cout << day14_2(read_input("day14.txt")) << std::endl;
+    // std::cout << day15_1(read_input("day15.txt"), 2000000) << std::endl;
+    // std::cout << day15_2(read_input("day15.txt"), 4000000) << std::endl;
+    // std::cout << day16(read_input("day16.txt")).first() << std::endl;
+    // std::cout << day16(read_input("day16.txt")).first_bfs() << std::endl;
+    std::cout << day16(read_input("day16.txt")).second() << std::endl;
     return 0;
 }
