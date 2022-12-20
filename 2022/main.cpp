@@ -1498,6 +1498,88 @@ struct day17 {
     }
 };
 
+int day18_1(std::vector<std::string> input) {
+    std::regex r("(\\d*),(\\d*),(\\d*)");
+
+    std::set<std::vector<int>> scan;
+    for (std::string& line : input) {
+        if (line.empty()) continue;
+        auto it = *std::sregex_iterator(line.begin(), line.end(), r);
+        std::vector<int> c;
+        for (int i = 1; i <= 3; ++i) {
+            c.push_back(std::stoi(it[i]));
+        }
+        scan.insert(c);
+    }
+    int e = 0;
+    for (auto c : scan) {
+        for (int i = 0; i < 3; ++i) {
+            auto n = c;
+            n[i] = c[i] + 1;
+            if (!scan.contains(n)) e++;
+            n[i] = c[i] - 1;
+            if (!scan.contains(n)) e++;
+        }
+    }
+    return e;
+}
+
+int day18_2(std::vector<std::string> input) {
+    std::regex r("(\\d*),(\\d*),(\\d*)");
+
+    std::vector<int> sizes(3);
+    for (std::string& line : input) {
+        if (line.empty()) continue;
+        auto it = *std::sregex_iterator(line.begin(), line.end(), r);
+        for (int i = 0; i < 3; ++i) {
+            sizes[i] = std::max(sizes[i], std::stoi(it[i + 1]) + 3);
+        }
+    }
+    
+    std::vector<std::vector<std::vector<int>>> scan(sizes[0], std::vector<std::vector<int>>(sizes[1], std::vector<int>(sizes[2])));
+    for (std::string& line : input) {
+        if (line.empty()) continue;
+        auto it = *std::sregex_iterator(line.begin(), line.end(), r);
+        std::vector<int> c;
+        for (int i = 0; i < 3; ++i) {
+            c.push_back(std::stoi(it[i + 1]) + 1);
+        }
+        scan[c[0]][c[1]][c[2]] = 1;
+    }
+    scan[0][0][0] = 2;
+    int n = sizes[0] * sizes[1] * sizes[2];
+    for (int k = 0; k < n; ++k) {
+        for (int a = 0; a < scan.size(); ++a) {
+            for (int b = 0; b < scan[a].size(); ++b) {
+                for (int c = 0; c < scan[a][b].size(); ++c) {
+                    if(scan[a][b][c] != 2) continue;
+                    if(a > 0            && scan[a - 1][b][c] == 0) scan[a - 1][b][c] = 2;
+                    if(a < sizes[0] - 1 && scan[a + 1][b][c] == 0) scan[a + 1][b][c] = 2;
+                    if(b > 0            && scan[a][b - 1][c] == 0) scan[a][b - 1][c] = 2;
+                    if(b < sizes[1] - 1 && scan[a][b + 1][c] == 0) scan[a][b + 1][c] = 2;
+                    if(c > 0            && scan[a][b][c - 1] == 0) scan[a][b][c - 1] = 2;
+                    if(c < sizes[2] - 1 && scan[a][b][c + 1] == 0) scan[a][b][c + 1] = 2;
+                }
+            }
+        }
+    }
+    int e = 0;
+    for (int a = 0; a < scan.size(); ++a) {
+        for (int b = 0; b < scan[a].size(); ++b) {
+            for (int c = 0; c < scan[a][b].size(); ++c) {
+                if(scan[a][b][c] != 1) continue;
+                if(a > 0            && scan[a - 1][b][c] == 2) ++e;
+                if(a < sizes[0] - 1 && scan[a + 1][b][c] == 2) ++e;
+                if(b > 0            && scan[a][b - 1][c] == 2) ++e;
+                if(b < sizes[1] - 1 && scan[a][b + 1][c] == 2) ++e;
+                if(c > 0            && scan[a][b][c - 1] == 2) ++e;
+                if(c < sizes[2] - 1 && scan[a][b][c + 1] == 2) ++e;
+            }
+        }
+    }
+
+    return e;
+}
 
 int main()
 {
@@ -1537,6 +1619,31 @@ int main()
     // std::cout << day17().first(">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>") << std::endl;
     // std::cout << day17().first(read_input("day17.txt")[0]) << std::endl;
     // std::cout << day17().second(">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>") << std::endl;
-    std::cout << day17().second(read_input("day17.txt")[0]) << std::endl;
+    // std::cout << day17().second(read_input("day17.txt")[0]) << std::endl;
+    std::cout << day18_2({
+        "2,2,1",
+        "2,1,2",
+        "1,2,2",
+        "2,2,2",
+        "3,2,2",
+        "2,3,2",
+        "2,2,3",
+        "2,2,4",
+        "2,1,5",
+        "1,2,5",
+        "3,2,5",
+        "2,3,5",
+        "2,2,6",
+    }) << std::endl;
+    std::cout << day18_1(read_input("day18.txt")) << std::endl;
+    std::cout << day18_2(read_input("day18.txt")) << std::endl;
     return 0;
 }
+
+/*
+  1   2   3   4   5
+ ... .x. ... ... .x. ...
+ .x. xxx .x. .x. x.x .x.
+ ... .x. ... ... .x. ...
+ 
+ */
