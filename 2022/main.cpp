@@ -14,6 +14,7 @@
 #include <optional>
 #include <variant>
 #include <list>
+#include <complex>
 
 std::vector<std::string> read_input(std::string path) {
     std::vector<std::string> result;
@@ -48,7 +49,31 @@ struct pt {
     pt operator -(const pt& other) const {
         return pt(x - other.x, y - other.y);
     }
+
+    pt operator +(const pt& other) const {
+        return pt(x + other.x, y + other.y);
+    }
+
+    pt operator *(const pt& other) const {
+        return pt(x * other.x, y * other.y);
+    }
+
+    pt operator /(const pt& other) const {
+        return pt(x / other.x, y / other.y);
+    }
+
 };
+
+std::ostream& operator<<(std::ostream& os, const pt& p) {
+    os << p.x << "." << p.y;
+    return os;
+}
+
+template<typename X, typename Y>
+std::ostream& operator<<(std::ostream& os, const std::pair<X, Y>& p) {
+    os << "[" << p.first << ", " << p.second << "]";
+    return os;
+}
 
 int day1_1(std::vector<std::string> lines) {
     int n = 0;
@@ -1676,6 +1701,102 @@ int64_t day20_2(std::vector<std::string> lines) {
     return a + b + c;
 }
 
+struct day21 {
+    struct op {
+        int value;
+        char o;
+        std::string left, right;
+        std::string me;
+
+        static op make_const(std::string me, int c) {
+            return {
+             .value = c,
+             .o = '=',
+             .me = me,
+            };
+        }
+
+        static op make_op(std::string me, std::string left, std::string right, std::string o) {
+            return {
+                .o = o[0],
+                .left = left,
+                .right = right,
+                .me = me,
+            };
+        }
+
+        int64_t eval(std::map<std::string, op>& ops) {
+            int64_t l, r;
+            switch (o) {
+            case '=':
+                return value;
+            case '+':
+                return ops[left].eval(ops) + ops[right].eval(ops);
+            case '-':
+                return ops[left].eval(ops) - ops[right].eval(ops);
+            case '*':
+                return ops[left].eval(ops) * ops[right].eval(ops);
+            case '/':
+                l = ops[left].eval(ops);
+                r = ops[right].eval(ops);
+                if (l % r != 0) std::cout << "wut: " << l << " / " << r << std::endl;
+                return l / r;
+            default:
+                throw "nope";
+            }
+        }
+
+        std::complex<double> eval2(std::map<std::string, op>& ops) {
+            if (me == "humn") 
+                return std::complex<double>(0, 1);
+            switch (o) {
+            case '=':
+                return std::complex<double>(value, 0);
+            case '+':
+                return ops[left].eval2(ops) + ops[right].eval2(ops);
+            case '-':
+                return ops[left].eval2(ops) - ops[right].eval2(ops);
+            case '*':
+                return ops[left].eval2(ops) * ops[right].eval2(ops);
+            case '/':
+                return ops[left].eval2(ops) / ops[right].eval2(ops);
+            default:
+                throw "nope";
+            }
+        }
+    };
+
+    std::map<std::string, op> ops;
+
+    day21(std::vector<std::string> input) {
+        std::regex c("(....): (.*)");
+        std::regex o("(....): (....) (.) (....)");
+        for (std::string& line : input) {
+            if (std::regex_search(line, o)) {
+                auto op = *std::sregex_iterator(line.begin(), line.end(), o);
+                ops[op[1]] = op::make_op(op[1], op[2], op[4], op[3]);
+            }
+            else {
+                auto cn = *std::sregex_iterator(line.begin(), line.end(), c);
+                ops[cn[1]] = op::make_const(cn[1], std::stoi(cn[2]));
+            }
+        }
+    }
+
+    int64_t first() {
+        return ops["root"].eval(ops);
+    }
+
+    int64_t second() {
+        using std::swap;
+        std::complex<double> a = ops[ops["root"].left].eval2(ops);
+        std::complex<double> b = ops[ops["root"].right].eval2(ops);
+        if (b.imag() != 0) swap(a, b);
+        if (b.imag() != 0) throw "wut";
+        return (b.real() - a.real()) / (a.imag());
+    }
+};
+
 int main()
 {
     // std::cout << day1_1(read_input("day1.txt")) << std::endl;
@@ -1717,7 +1838,10 @@ int main()
     // std::cout << day17().second(read_input("day17.txt")[0]) << std::endl;
     // std::cout << day18_1(read_input("day18.txt")) << std::endl;
     // std::cout << day18_2(read_input("day18.txt")) << std::endl;
-    std::cout << day20_1(read_input("day20.txt")) << std::endl;
-    std::cout << day20_2(read_input("day20.txt")) << std::endl;
+    // std::cout << day20_1(read_input("day20.txt")) << std::endl;
+    // std::cout << day20_2(read_input("day20.txt")) << std::endl;
+    std::cout << day21(read_input("day21.txt")).first() << std::endl;
+    std::cout << day21(read_input("day21.txt")).second() << std::endl;
+
     return 0;
 }
