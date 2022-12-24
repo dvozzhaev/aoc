@@ -62,6 +62,10 @@ struct pt {
         return pt(x / other.x, y / other.y);
     }
 
+    pt wrap(int w, int h) {
+
+        return { (x + w) % w, (y + h) % h };
+    }
 };
 
 std::ostream& operator<<(std::ostream& os, const pt& p) {
@@ -1797,6 +1801,117 @@ struct day21 {
     }
 };
 
+int64_t day24_1(std::vector<std::string> lines) {
+    using valley = std::map<pt, std::vector<int>>;
+    valley cur;
+    int h = lines.size() - 2;
+    int w = lines[0].size() - 2;
+    std::vector<pt> d = { { 0, 0 }, { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } };
+    for (int y = 1; y < lines.size() - 1; ++y) {
+        for (int x = 1; x < lines[y].size() - 1; ++x) {
+            int n =
+                lines[y][x] == '#' ? 0 :
+                lines[y][x] == '^' ? 1 :
+                lines[y][x] == 'v' ? 2 :
+                lines[y][x] == '<' ? 3 :
+                lines[y][x] == '>' ? 4 : -1;
+            if (n >= 0) cur[{x - 1, y - 1}].push_back(n);
+        }
+    }
+
+    int t = 0;
+    std::set<pt> elves;
+    pt enter(0, -1);
+    pt exit(w - 1, h);
+    elves.insert(enter);
+    while (true) {
+        valley next;
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                for (int k : cur[{x, y}]) {
+                    pt n = (pt(x, y) + d[k]).wrap(w, h);
+                    next[n].push_back(k);
+                }
+            }
+        }
+
+        std::set<pt> next_elves;
+        for (pt p : elves) {
+            if (p == exit) return t;
+            for (pt n : d) {
+                pt m = (p + n);
+                bool in_valley = m.x >= 0 && m.y >= 0 && m.x < w&& m.y < h;
+                bool in_portal = m == enter || m == exit;
+                if ((in_valley || in_portal) && next[m].empty()) next_elves.insert(m);
+            }
+        }
+        t += 1;
+        elves = next_elves;
+        cur = next;
+    }
+    return -1;
+}
+
+int64_t day24_2(std::vector<std::string> lines) {
+    using valley = std::map<pt, std::vector<int>>;
+    valley cur;
+    int h = lines.size() - 2;
+    int w = lines[0].size() - 2;
+    std::vector<pt> d = { { 0, 0 }, { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } };
+    for (int y = 1; y < lines.size() - 1; ++y) {
+        for (int x = 1; x < lines[y].size() - 1; ++x) {
+            int n =
+                lines[y][x] == '#' ? 0 :
+                lines[y][x] == '^' ? 1 :
+                lines[y][x] == 'v' ? 2 :
+                lines[y][x] == '<' ? 3 :
+                lines[y][x] == '>' ? 4 : -1;
+            if (n >= 0) cur[{x - 1, y - 1}].push_back(n);
+        }
+    }
+
+    int t = 0;
+    std::set<pt> elves;
+    pt enter(0, -1);
+    pt exit(w - 1, h);
+    std::vector<pt> waypoints{ enter, exit, enter, exit };
+    while (!waypoints.empty()) {
+        if (elves.empty()) {
+            elves.insert(*waypoints.begin());
+            waypoints.erase(waypoints.begin());
+            std::cout << t << std::endl;
+            continue;
+        } 
+        if (elves.contains(*waypoints.begin())) {
+            elves.clear();
+            continue;
+        }
+        valley next;
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                for (int k : cur[{x, y}]) {
+                    pt n = (pt(x, y) + d[k]).wrap(w, h);
+                    next[n].push_back(k);
+                }
+            }
+        }
+
+        std::set<pt> next_elves;
+        for (pt p : elves) {
+            for (pt n : d) {
+                pt m = (p + n);
+                bool in_valley = m.x >= 0 && m.y >= 0 && m.x < w&& m.y < h;
+                bool in_portal = m == enter || m == exit;
+                if ((in_valley || in_portal) && next[m].empty()) next_elves.insert(m);
+            }
+        }
+        t += 1;
+        elves = next_elves;
+        cur = next;
+    }
+    return t;
+}
+
 int main()
 {
     // std::cout << day1_1(read_input("day1.txt")) << std::endl;
@@ -1840,8 +1955,9 @@ int main()
     // std::cout << day18_2(read_input("day18.txt")) << std::endl;
     // std::cout << day20_1(read_input("day20.txt")) << std::endl;
     // std::cout << day20_2(read_input("day20.txt")) << std::endl;
-    std::cout << day21(read_input("day21.txt")).first() << std::endl;
-    std::cout << day21(read_input("day21.txt")).second() << std::endl;
-
+    // std::cout << day21(read_input("day21.txt")).first() << std::endl;
+    // std::cout << day21(read_input("day21.txt")).second() << std::endl;
+    std::cout << day24_1(read_input("day24.txt")) << std::endl;
+    std::cout << day24_2(read_input("day24.txt")) << std::endl;
     return 0;
 }
